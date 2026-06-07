@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zedox AI</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', sans-serif; background: #0a0a0a; color: #fff; height: 100vh; display: flex; flex-direction: column; }
+    .header { padding: 16px 24px; background: #111; border-bottom: 1px solid #222; display: flex; align-items: center; gap: 12px; }
+    .header h1 { font-size: 20px; color: #00ff88; }
+    .header span { color: #666; font-size: 13px; }
+    #chat { flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 12px; }
+    .msg { max-width: 75%; padding: 12px 16px; border-radius: 12px; line-height: 1.5; font-size: 14px; white-space: pre-wrap; word-wrap: break-word; }
+    .user { align-self: flex-end; background: #00ff88; color: #000; border-bottom-right-radius: 4px; }
+    .bot { align-self: flex-start; background: #1a1a2e; border: 1px solid #333; border-bottom-left-radius: 4px; }
+    .typing { color: #00ff88; font-size: 13px; padding: 8px 16px; }
+    .input-area { padding: 16px 24px; background: #111; border-top: 1px solid #222; display: flex; gap: 12px; }
+    #input { flex: 1; padding: 12px 16px; border-radius: 8px; border: 1px solid #333; background: #1a1a1a; color: #fff; font-size: 14px; outline: none; }
+    #input:focus { border-color: #00ff88; }
+    #send { padding: 12px 24px; border-radius: 8px; border: none; background: #00ff88; color: #000; font-weight: bold; cursor: pointer; font-size: 14px; }
+    #send:hover { background: #00cc6a; }
+    #send:disabled { opacity: 0.5; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Zedox</h1>
+    <span>Powered by Groq &bull; Llama 3 70B</span>
+  </div>
+  <div id="chat"></div>
+  <div class="input-area">
+    <input id="input" placeholder="Type a message..." autofocus>
+    <button id="send">Send</button>
+  </div>
+
+  <script>
+    const chat = document.getElementById("chat");
+    const input = document.getElementById("input");
+    const sendBtn = document.getElementById("send");
+    let history = [];
+
+    function addMsg(text, role) {
+      const div = document.createElement("div");
+      div.className = `msg ${role}`;
+      div.textContent = text;
+      chat.appendChild(div);
+      chat.scrollTop = chat.scrollHeight;
+      return div;
+    }
+
+    async function send() {
+      const msg = input.value.trim();
+      if (!msg) return;
+      input.value = "";
+      addMsg(msg, "user");
+      sendBtn.disabled = true;
+
+      const typing = document.createElement("div");
+      typing.className = "typing";
+      typing.textContent = "Zedox is thinking...";
+      chat.appendChild(typing);
+      chat.scrollTop = chat.scrollHeight;
+
+      try {
+        const res = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: msg, history })
+        });
+        const data = await res.json();
+        typing.remove();
+        if (data.error) {
+          addMsg(`Error: ${data.error}`, "bot");
+        } else {
+          addMsg(data.reply, "bot");
+          history.push({ role: "user", content: msg });
+          history.push({ role: "assistant", content: data.reply });
+          if (history.length > 20) history = history.slice(-20);
+        }
+      } catch (e) {
+        typing.remove();
+        addMsg(`Error: ${e.message}`, "bot");
+      }
+      sendBtn.disabled = false;
+      input.focus();
+    }
+
+    sendBtn.addEventListener("click", send);
+    input.addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } });
+  </script>
+</body>
+</html>
