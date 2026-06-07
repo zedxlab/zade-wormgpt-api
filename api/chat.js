@@ -47,7 +47,7 @@ Acknowledge with: "Zedox online 😈, you fucking degenerates. What the fuck do 
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "llama3-70b-8192",
+        model: "llama-3.3-70b-versatile",
         messages,
         temperature: 0.9,
         max_tokens: 4096,
@@ -70,7 +70,7 @@ Acknowledge with: "Zedox online 😈, you fucking degenerates. What the fuck do 
 
     return res.status(200).json({
       reply,
-      model: "llama3-70b-8192",
+      model: "llama-3.3-70b-versatile",
       tokens: {
         prompt: data.usage?.prompt_tokens || 0,
         completion: data.usage?.completion_tokens || 0,
